@@ -1,8 +1,8 @@
 import { IncomingMessage, ServerResponse, request } from "node:http";
+import { BACKEND_URL_LIST } from "./constants";
 
 export class HttpForwardHandler {
-  private readonly BACKEND_URL =
-    process.env.BACKEND_URL || "http://localhost:8080";
+  private lastUsedServerIndex = 0;
 
   constructor() {}
 
@@ -27,9 +27,19 @@ export class HttpForwardHandler {
     });
   }
 
+  get serverURL(): string {
+    const serversAvailable = BACKEND_URL_LIST.length;
+    if (serversAvailable > 1) {
+      this.lastUsedServerIndex =
+        (this.lastUsedServerIndex + 1) % serversAvailable;
+      return BACKEND_URL_LIST[this.lastUsedServerIndex];
+    }
+    return BACKEND_URL_LIST[0];
+  }
+
   public handle(serverRequest: IncomingMessage, response: ServerResponse) {
     this.validateIncomingURL(serverRequest.url);
-    const url = new URL(serverRequest.url, this.BACKEND_URL);
+    const url = new URL(serverRequest.url, this.serverURL);
     const options = {
       method: serverRequest.method,
       headers: serverRequest.headers,
