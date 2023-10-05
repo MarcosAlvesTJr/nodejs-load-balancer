@@ -1,4 +1,4 @@
-import * as http from "node:http";
+import { IncomingMessage, ServerResponse, request } from "node:http";
 
 export class HttpForwardHandler {
   private readonly BACKEND_URL =
@@ -13,8 +13,8 @@ export class HttpForwardHandler {
   }
 
   private handleServerIncomingMessage(
-    incomingMessage: http.IncomingMessage,
-    serverResponse: http.ServerResponse,
+    incomingMessage: IncomingMessage,
+    serverResponse: ServerResponse,
   ) {
     incomingMessage.on("data", (chunk) => {
       serverResponse.write(chunk);
@@ -22,18 +22,24 @@ export class HttpForwardHandler {
     incomingMessage.on("end", () => {
       serverResponse.end();
     });
+    incomingMessage.on("error", (error) => {
+      serverResponse.end();
+    });
   }
 
-  public handle(request: http.IncomingMessage, response: http.ServerResponse) {
-    this.validateIncomingURL(request.url);
-    const url = new URL(request.url, this.BACKEND_URL);
+  public handle(serverRequest: IncomingMessage, response: ServerResponse) {
+    this.validateIncomingURL(serverRequest.url);
+    const url = new URL(serverRequest.url, this.BACKEND_URL);
     const options = {
-      method: request.method,
-      headers: request.headers,
+      method: serverRequest.method,
+      headers: serverRequest.headers,
     };
-    const forwarded = http.request(url, options, (backendResponse) =>
+    const forwarded = request(url, options, (backendResponse) =>
       this.handleServerIncomingMessage(backendResponse, response),
     );
+    forwarded.on("error", (error) => {
+      response.end();
+    });
     forwarded.end();
   }
 }

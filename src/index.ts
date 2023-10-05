@@ -1,17 +1,11 @@
-import * as http from "node:http";
+import { IncomingMessage, ServerResponse } from "node:http";
 import { HttpForwardHandler } from "./http-forward-handler";
+import { Cluster } from "./cluster-handler";
 
 const httpForwardHandler = new HttpForwardHandler();
 
-function serverListener(
-  request: http.IncomingMessage,
-  response: http.ServerResponse,
-) {
+function serverListener(request: IncomingMessage, response: ServerResponse) {
   httpForwardHandler.handle(request, response);
 }
 
-const server = http.createServer(serverListener);
-
-server.listen(3000, () => {
-  console.log("Server listening on port 3000");
-});
+Cluster.create(serverListener);
