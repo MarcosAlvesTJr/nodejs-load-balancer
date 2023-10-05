@@ -1,5 +1,6 @@
 import { IncomingMessage, ServerResponse, request } from "node:http";
 import { BACKEND_URL_LIST } from "./constants";
+import { logger } from "./logger";
 
 export class HttpForwardHandler {
   private lastUsedServerIndex = 0;
@@ -20,6 +21,7 @@ export class HttpForwardHandler {
       serverResponse.write(chunk);
     });
     incomingMessage.on("end", () => {
+      logger.debug(`Response ended`);
       serverResponse.end();
     });
     incomingMessage.on("error", () => {
@@ -44,6 +46,8 @@ export class HttpForwardHandler {
       method: serverRequest.method,
       headers: serverRequest.headers,
     };
+    logger.debug(`Forwarding request to ${url}`);
+    logger.debug(`Forwarding request with options ${JSON.stringify(options)}`);
     const forwarded = request(url, options, (backendResponse) =>
       this.handleServerIncomingMessage(backendResponse, response),
     );

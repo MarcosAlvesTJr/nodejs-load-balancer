@@ -14,5 +14,8 @@
     "dev": "bunx ts-node src/index.ts",
     "servers": "bunx ts-node src/server/index.ts",
     "build": "tsc"
+  },
+  "dependencies": {
+    "log4js": "^6.9.1"
   }
 }
