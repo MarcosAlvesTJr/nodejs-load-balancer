@@ -22,7 +22,7 @@ export class HttpForwardHandler {
     incomingMessage.on("end", () => {
       serverResponse.end();
     });
-    incomingMessage.on("error", (error) => {
+    incomingMessage.on("error", () => {
       serverResponse.end();
     });
   }
@@ -37,7 +37,7 @@ export class HttpForwardHandler {
     const forwarded = request(url, options, (backendResponse) =>
       this.handleServerIncomingMessage(backendResponse, response),
     );
-    forwarded.on("error", (error) => {
+    forwarded.on("error", () => {
       response.end();
     });
     forwarded.end();
