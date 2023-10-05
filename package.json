@@ -1,14 +1,17 @@
 {
   "name": "load-balancer",
   "version": "1.0.0",
-  "description": "Load balancer in NodeJS",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "author": "Marcos A T Jr",
-  "license": "ISC",
+  "main": "index.js",
   "devDependencies": {
+    "@types/node": "^20.8.2",
+    "prettier": "^3.0.3",
     "typescript": "^5.2.2"
+  },
+  "description": "Load balancer in NodeJS",
+  "license": "ISC",
+  "scripts": {
+    "dev": "bunx ts-node src/index.ts",
+    "servers": "bunx ts-node src/server/index.ts"
   }
 }
