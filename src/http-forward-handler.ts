@@ -1,16 +1,33 @@
 import { IncomingMessage, ServerResponse, request } from "node:http";
 import { BACKEND_URL_LIST } from "./constants";
 import { logger } from "./logger";
+import { HealthCheck } from "./health-check";
 
 export class HttpForwardHandler {
   private lastUsedServerIndex = 0;
+  private urlList = [...BACKEND_URL_LIST];
+  private HEALTH_CHECK_INTERVAL_IN_MS = 10000;
 
-  constructor() {}
+  constructor() {
+    this.healthCheck();
+  }
 
   private validateIncomingURL(url: string | undefined): asserts url is string {
     if (!url) {
       throw new Error("No url provided");
     }
+  }
+
+  private healthCheck() {
+    let serversCheck: HealthCheck[] = [];
+    for (const urlListElement of this.urlList) {
+      serversCheck.push(new HealthCheck(urlListElement, BACKEND_URL_LIST));
+    }
+    setInterval(() => {
+      serversCheck.forEach((serverCheck) => {
+        this.urlList = serverCheck.check();
+      });
+    }, this.HEALTH_CHECK_INTERVAL_IN_MS);
   }
 
   private handleServerIncomingMessage(
