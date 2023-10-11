@@ -1,15 +1,14 @@
-import { IncomingMessage, ServerResponse, request } from "node:http";
+import { IncomingMessage, request, ServerResponse } from "node:http";
 import { BACKEND_URL_LIST } from "./constants";
 import { logger } from "./logger";
-import { HealthCheck } from "./health-check";
+import process from "node:process";
+import { WorkerMessage } from "./worker-message";
 
 export class HttpForwardHandler {
   private lastUsedServerIndex = 0;
-  private urlList = [...BACKEND_URL_LIST];
-  private HEALTH_CHECK_INTERVAL_IN_MS = 10000;
 
-  constructor() {
-    this.healthCheck();
+  constructor(private backendURLList: string[] = BACKEND_URL_LIST) {
+    this.registerHealthCheckListener();
   }
 
   private validateIncomingURL(url: string | undefined): asserts url is string {
@@ -18,16 +17,12 @@ export class HttpForwardHandler {
     }
   }
 
-  private healthCheck() {
-    let serversCheck: HealthCheck[] = [];
-    for (const urlListElement of this.urlList) {
-      serversCheck.push(new HealthCheck(urlListElement, BACKEND_URL_LIST));
-    }
-    setInterval(() => {
-      serversCheck.forEach((serverCheck) => {
-        this.urlList = serverCheck.check();
-      });
-    }, this.HEALTH_CHECK_INTERVAL_IN_MS);
+  private registerHealthCheckListener() {
+    process.on("message", ({ message, payload }: WorkerMessage) => {
+      if (message === "health-check" && Array.isArray(payload)) {
+        this.backendURLList = payload;
+      }
+    });
   }
 
   private handleServerIncomingMessage(
@@ -47,13 +42,13 @@ export class HttpForwardHandler {
   }
 
   get serverURL(): string {
-    const serversAvailable = BACKEND_URL_LIST.length;
+    const serversAvailable = this.backendURLList.length;
     if (serversAvailable > 1) {
       this.lastUsedServerIndex =
         (this.lastUsedServerIndex + 1) % serversAvailable;
-      return BACKEND_URL_LIST[this.lastUsedServerIndex];
+      return this.backendURLList[this.lastUsedServerIndex];
     }
-    return BACKEND_URL_LIST[0];
+    return this.backendURLList[0];
   }
 
   public handle(serverRequest: IncomingMessage, response: ServerResponse) {
